@@ -92,7 +92,6 @@ public class Importer
                 dirToImport = item.FullName;
                 lastDate = item.LastWriteTime;
             }           
- 
 
         }
 
@@ -106,8 +105,10 @@ public class Importer
     [MenuItem("Tools/Batch Import and Build")]
     private async static void ImporterMenuItem()
     {
-        DirectoryInfo d = new DirectoryInfo("D:/CharacterGen/Batch/");
+        const string fromPath = "D:/CharacterGen/Batch/";
+        DirectoryInfo d = new DirectoryInfo(fromPath);
         bool first = true;
+        const string targetRootPath = "D:/CharacterGen/BatchOut/";
         foreach (var item in d.GetDirectories())
         {
             Debug.Log("Directory: " + item.FullName);
@@ -120,8 +121,10 @@ public class Importer
                 await Task.Delay(3000);
             }
             ImportAsset(item.FullName);
-            BuildWebGLPlayer("D:/CharacterGen/BatchOut/" + item.Name);
- 
+            string targetDir = targetRootPath + item.Name;
+            BuildWebGLPlayer(targetDir);
+            FileUtil.CopyFileOrDirectory(fromPath + item.Name + "/Hero.jpg", targetDir + "/Hero.jpg");
+            FileUtil.CopyFileOrDirectory(fromPath + item.Name + "/attrs.txt", targetDir + "/attrs.txt");
         }
     }
 
