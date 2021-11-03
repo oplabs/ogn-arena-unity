@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 
 public class Importer
 {
+    private const string batchDirPref = "ImportBatchDirectory";
+    private const string batchOutDirPref = "OutputBatchDirectory";
+
     [MenuItem("Tools/Texture Copy Alpha")]
     private static void TextureMenuItem()
     {
@@ -76,10 +79,43 @@ public class Importer
 
     }
 
+    private static string getBatchReadDir() {
+      if (!EditorPrefs.HasKey(batchDirPref)){
+        throw new System.Exception("Please set a directory to import from");
+      }
+      return EditorPrefs.GetString(batchDirPref);
+    }
+
+    private static string getBatchOutDir() {
+      if (!EditorPrefs.HasKey(batchOutDirPref)){
+        throw new System.Exception("Please set a directory to export to");
+      }
+      return EditorPrefs.GetString(batchOutDirPref);
+    }
+
+
+    [MenuItem("Tools/Set Import Directory")]
+    private static void setImporterDir()
+    {
+        string batchReadDir = EditorUtility.OpenFolderPanel("Set the folder you wish to import from", "", "");
+        EditorPrefs.SetString(batchDirPref, batchReadDir);
+        Debug.Log("setting batch directory to:" +  batchReadDir);
+    }
+
+    [MenuItem("Tools/Set Build Directory")]
+    private static void setBuildDir()
+    {
+        string batchOutDir = EditorUtility.OpenFolderPanel("Set the folder you wish to build to", "", "");
+        EditorPrefs.SetString(batchOutDirPref, batchOutDir);
+        Debug.Log("setting batch directory to:" + batchOutDir);
+
+    }
+
+
     [MenuItem("Tools/Import Newest")]
     private static void ImporterNewest()
     {
-        DirectoryInfo d = new DirectoryInfo("D:/CharacterGen/Batch/");
+        DirectoryInfo d = new DirectoryInfo(getBatchReadDir());
         System.DateTime lastDate = System.DateTime.MinValue;
         string dirToImport = null;
 
@@ -105,10 +141,10 @@ public class Importer
     [MenuItem("Tools/Batch Import and Build")]
     private async static void ImporterMenuItem()
     {
-        const string fromPath = "D:/CharacterGen/Batch/";
+        string fromPath = getBatchReadDir();
         DirectoryInfo d = new DirectoryInfo(fromPath);
         bool first = true;
-        const string targetRootPath = "D:/CharacterGen/BatchOut/";
+        string targetRootPath = getBatchOutDir();
         foreach (var item in d.GetDirectories())
         {
             Debug.Log("Directory: " + item.FullName);
@@ -121,10 +157,10 @@ public class Importer
                 await Task.Delay(3000);
             }
             ImportAsset(item.FullName);
-            string targetDir = targetRootPath + item.Name;
+            string targetDir = Path.Combine(targetRootPath, item.Name);
             BuildWebGLPlayer(targetDir);
-            FileUtil.CopyFileOrDirectory(fromPath + item.Name + "/Hero.jpg", targetDir + "/Hero.jpg");
-            FileUtil.CopyFileOrDirectory(fromPath + item.Name + "/attrs.txt", targetDir + "/attrs.txt");
+            FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/Hero.jpg"), targetDir + "/Hero.jpg");
+            FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/attrs.txt"), targetDir + "/attrs.txt");
         }
     }
 
@@ -166,6 +202,11 @@ public class Importer
             AnimatorState state = cs.state;
 
             if (state.name == "idle" && (idle != null))
+            {
+                Debug.Log("setting idle");
+                rootController.SetStateEffectiveMotion(state, idle);
+            }
+            else if (state.name == "idle2" && (idle != null))
             {
                 Debug.Log("setting idle");
                 rootController.SetStateEffectiveMotion(state, idle);

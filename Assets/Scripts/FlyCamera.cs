@@ -24,7 +24,6 @@ public class FlyCamera : MonoBehaviour
     public bool singleTouchOrbiting = true;
     public bool pinchToZoom = true;
 
-    private bool wasJustRotating = false;
     private Vector2 lastTouchPosition;
     private bool isMobile;
 
