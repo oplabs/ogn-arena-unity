@@ -118,6 +118,7 @@ public class Importer
         DirectoryInfo d = new DirectoryInfo(getBatchReadDir());
         System.DateTime lastDate = System.DateTime.MinValue;
         string dirToImport = null;
+        string name = null;
 
         foreach (var item in d.GetDirectories())
         {
@@ -126,6 +127,7 @@ public class Importer
             if (item.LastWriteTime > lastDate)
             {
                 dirToImport = item.FullName;
+                name = item.Name;
                 lastDate = item.LastWriteTime;
             }           
 
@@ -133,8 +135,24 @@ public class Importer
 
         if (dirToImport != null)
         {
-            ImportAsset(dirToImport);
+            string [] keys = name.Split('_');
+            ImportAsset(dirToImport, keys[1]);
         }
+    }
+
+
+    [MenuItem("Tools/Import Animations")]
+    private static void ImportAnimations() {
+       const string relativePath = "/CC_Assets/" + "Hero";
+       const string assetPath = "Assets" + relativePath;
+
+       AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath + "/hero_LODGroup_animator.controller");
+       foreach (AnimationClip clip in controller.animationClips)
+       {
+         Debug.Log("Storing clip: " + clip.name);
+         AssetDatabase.CreateAsset(AnimationClip.Instantiate(clip), "Assets/Animations/" + clip.name + ".anim");
+       }
+       AssetDatabase.SaveAssets();
     }
 
     // Import the boxer
@@ -156,7 +174,8 @@ public class Importer
             {
                 await Task.Delay(3000);
             }
-            ImportAsset(item.FullName);
+            string [] keys = item.Name.Split('_');
+            ImportAsset(item.FullName, keys[1]);
             string targetDir = Path.Combine(targetRootPath, item.Name);
             BuildWebGLPlayer(targetDir);
             FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/Hero.jpg"), targetDir + "/Hero.jpg");
@@ -164,9 +183,10 @@ public class Importer
         }
     }
 
-    private static void ImportAsset(string assetDirectory) {
+    private static void ImportAsset(string assetDirectory, string classType) {
         const string relativePath = "/CC_Assets/" + "Hero";
         const string assetPath = "Assets" + relativePath;
+        const string animationPath = "Assets/Animations";
 
         Debug.Log("Deleting:" + AssetDatabase.DeleteAsset(assetPath));
 
@@ -175,26 +195,18 @@ public class Importer
 
         AssetDatabase.Refresh();
 
-        AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath + "/hero_LODGroup_animator.controller");
+        //AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath + "/hero_LODGroup_animator.controller");
         AnimatorController rootController = AssetDatabase.LoadAssetAtPath<AnimatorController>("Assets/CC_Assets/hero_LODGroup_animator.controller");
+        AnimationClip idle = null, action = null;
 
         AnimatorControllerLayer rootLayer = rootController.layers[0];
 
-        AnimationClip idle = null, action = null;
-
-        foreach (AnimationClip clip in controller.animationClips)
-        {
-            Debug.Log("found clip: " + clip.name);
-            if (clip.name == "Idle_Battle" || clip.name == "F_LS_Warning_Idle")
-            {
-                Debug.Log("Found idle");
-                idle = clip;
-            }
-            else if (clip.name == "Atk_2xCombo02" || clip.name == "M_LS_MageSpellCast_05")
-            {
-                Debug.Log("Found action");
-                action = clip;
-            }
+        if (classType.ToLower() == "mage") {
+          idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageIdle.anim");
+          action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageAction.anim");
+        } else {
+          idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterIdle.anim");
+          action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterAction.anim");
         }
 
         foreach (var cs in rootLayer.stateMachine.states)
