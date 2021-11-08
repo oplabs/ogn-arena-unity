@@ -195,18 +195,38 @@ public class Importer
 
         AssetDatabase.Refresh();
 
-        //AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath + "/hero_LODGroup_animator.controller");
         AnimatorController rootController = AssetDatabase.LoadAssetAtPath<AnimatorController>("Assets/CC_Assets/hero_LODGroup_animator.controller");
         AnimationClip idle = null, action = null;
 
         AnimatorControllerLayer rootLayer = rootController.layers[0];
 
-        if (classType.ToLower() == "mage") {
-          idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageIdle.anim");
-          action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageAction.anim");
-        } else {
-          idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterIdle.anim");
-          action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterAction.anim");
+        AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath + "/hero_LODGroup_animator.controller");
+
+        bool isMage = (classType.ToLower() == "mage");
+
+        string idleClipName = isMage ? "F_LS_Warning_Idle" : "Idle_Battle";
+        string actionClipName = isMage ? "M_LS_MageSpellCast_05" : "Atk_2xCombo02";
+
+        foreach (AnimationClip clip in controller.animationClips)
+        {
+          if (clip.name == idleClipName)
+          {
+            idle = clip;
+          }
+          else if (clip.name == actionClipName)
+          {
+            action = clip;
+          }
+        }
+
+        if (!idle || !action) {
+          if (isMage) {
+            idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageIdle.anim");
+            action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageAction.anim");
+          } else {
+            idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterIdle.anim");
+            action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterAction.anim");
+          }
         }
 
         foreach (var cs in rootLayer.stateMachine.states)
