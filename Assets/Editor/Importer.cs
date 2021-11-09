@@ -160,6 +160,7 @@ public class Importer
     private async static void ImporterMenuItem()
     {
         string fromPath = getBatchReadDir();
+        string KeyName = Path.GetFileName(fromPath);
         DirectoryInfo d = new DirectoryInfo(fromPath);
         bool first = true;
         string targetRootPath = getBatchOutDir();
@@ -172,11 +173,11 @@ public class Importer
             }
             else
             {
-                await Task.Delay(3000);
+                await Task.Delay(5000);
             }
             string [] keys = item.Name.Split('_');
             ImportAsset(item.FullName, keys[1]);
-            string targetDir = Path.Combine(targetRootPath, item.Name);
+            string targetDir = Path.Combine(targetRootPath, item.Name + "_" + KeyName);
             BuildWebGLPlayer(targetDir);
             FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/Hero.jpg"), targetDir + "/Hero.jpg");
             FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/attrs.txt"), targetDir + "/attrs.txt");

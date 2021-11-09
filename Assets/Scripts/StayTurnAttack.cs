@@ -4,16 +4,24 @@ using UnityEngine;
 
 public class StayTurnAttack : MonoBehaviour
 {
-    private Vector3 initRenderPosition;
+    private Vector3 standPosition;
+    private Vector3 initPosition;
     private Quaternion startRotation;
     private bool stayInPlace;
     private int turnCounter = 0;
+
+    private Transform lFoot;
+    private Transform rFoot;
 
     // Start is called before the first frame update
     void Start()
     {
       stayInPlace = false;
       turnCounter = 0;
+      // find the feet of the person
+      Transform pelvis = transform.Find("root").Find("CC_Base_Hip").Find("CC_Base_Pelvis");
+      lFoot = pelvis.Find("CC_Base_L_Thigh").Find("CC_Base_L_Calf").Find("CC_Base_L_Foot");
+      rFoot = pelvis.Find("CC_Base_R_Thigh").Find("CC_Base_R_Calf").Find("CC_Base_R_Foot");
     }
 
     private Vector3 getRenderPosition() {
@@ -22,64 +30,29 @@ public class StayTurnAttack : MonoBehaviour
 
 
     // Update is called once per frame
-    /*
-    void Update()
-    {
-      if(!stayInPlace) {
-        Animator animator = GetComponent<Animator>();
-        if (animator.IsInTransition(0) && animator.GetAnimatorTransitionInfo(0).userNameHash == Animator.StringToHash("InPlaceIdle")) {
-          initRenderPosition = getRenderPosition();
-          Debug.Log("set init Render Positon:" + initRenderPosition);
-          startRotation = animator.transform.rotation;
-          stayInPlace = true;
-          turnCounter += 1;
-        }
-      }
-    }*/
-
     void LateUpdate() {
       Animator animator = GetComponent<Animator>();
       if (animator.IsInTransition(0)) {
-
         if(animator.GetAnimatorTransitionInfo(0).userNameHash == Animator.StringToHash("InPlaceIdle")) {
+          AnimatorTransitionInfo trans = animator.GetAnimatorTransitionInfo(0);
           if (!stayInPlace) {
-            initRenderPosition = getRenderPosition();
-            //Debug.Log("set init Render Positon:" + initRenderPosition);
+            initPosition = transform.position;
+            standPosition = (lFoot.position + rFoot.position)/2;
+            //don't go up or down
+            standPosition.y = 0;
             startRotation = animator.transform.rotation;
             stayInPlace = true;
             turnCounter += 1;
           } else {
-            //Debug.Log("Transition State:" + animator.GetCurrentAnimatorStateInfo(0).shortNameHash);
-            //Debug.Log("Next idle2: " + (animator.GetNextAnimatorStateInfo(0).shortNameHash == Animator.StringToHash("idle2")));
-            //Debug.Log("Duration:" + animator.GetNextAnimatorStateInfo(0).length);
-            //
-            //if (animator.GetNextAnimatorStateInfo(0).normalizedTime < 0.1f) {
-            /*
-            Debug.Log("init Positon:" + initRenderPosition);
-            Debug.Log("renderPosition:" + getRenderPosition());
-            Debug.Log("DeltaTime:" + Time.deltaTime);
-            */
-            Vector3 deltaPosition = Vector3.ClampMagnitude(getRenderPosition() - initRenderPosition, 0.025f);
-            // clamp down the up and down movement
-            deltaPosition.y = 0;
-            //Debug.Log("DeltaPositon:" + deltaPosition + " move amount:" + deltaPosition.magnitude);
-            transform.position -= deltaPosition;
-            //}
+            transform.position = Vector3.Lerp(initPosition, standPosition, trans.normalizedTime);
           }
         }
-        // do this only in Transisition
-        //
-        /*
-        if(stayInPlace) {
-          AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
-        }*/
-      } else if ((animator.GetCurrentAnimatorStateInfo(0).shortNameHash == Animator.StringToHash("idle2")) && (turnCounter % 4 == 0)) {
-          Quaternion r = startRotation * Quaternion.AngleAxis(180, Vector3.up);
-          animator.transform.rotation = Quaternion.Lerp(startRotation, r, (animator.GetCurrentAnimatorStateInfo(0).normalizedTime - 0.5f) / 0.25f);
       } else if (stayInPlace) {
+        transform.position = standPosition;
         stayInPlace = false;
-        //Debug.Log("Moving along..." + getRenderPosition());
+      } else if ((animator.GetCurrentAnimatorStateInfo(0).shortNameHash == Animator.StringToHash("idle2")) && (turnCounter % 2 == 0)) {
+          Quaternion r = startRotation * Quaternion.AngleAxis(180, Vector3.up);
+          animator.transform.rotation = Quaternion.Lerp(startRotation, r, (animator.GetCurrentAnimatorStateInfo(0).normalizedTime - 0.6f) / 0.25f);
       }
     }
-
 }
