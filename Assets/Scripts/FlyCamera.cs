@@ -69,7 +69,7 @@ public class FlyCamera : MonoBehaviour
         GameObject parent = GameObject.Find("hero");
         Renderer renderTarget = parent.transform.GetChild(0).gameObject.GetComponent<Renderer>();
 
-        Vector3 tgt = renderTarget.bounds.center;// + new Vector3(0, 1.0f, 0);
+        Vector3 tgt = renderTarget.bounds.center + new Vector3(0, 0.5f, 0);
         //Debug.Log("Target is:" + tgt);
         Quaternion rotation = transform.rotation;
         //Debug.Log("Is Mobile device:" + (SystemInfo.deviceType == DeviceType.Handheld));
@@ -86,35 +86,6 @@ public class FlyCamera : MonoBehaviour
             //rotation = Quaternion.Euler(targetY, targetX, 0);
             //move toward target rotation
             rotation = Quaternion.Lerp(rotation, Quaternion.Euler(targetY, targetX, 0), 0.5f);
-            /*
-
-            Vector3 tRay = tgt - transform.position;
-            Quaternion _r = Quaternion.LookRotation(tRay, Vector3.up);
-            Vector3 angles = _r.eulerAngles;
-            //Debug.Log("Euler is:" + angles);
-            float x = angles.y;
-            float y = angles.x;
-
-            if (y > 180f)
-            {
-                //Debug.Log("overflow on:" + y);
-                y = y - 360f;
-            }
-
-            if (x > 180f)
-            {
-                x = x - 360f;
-            }
-
-
-            x += Input.GetAxis("Mouse X") * (xSpeed / 5) * 0.04f;
-            y -= Input.GetAxis("Mouse Y") * (ySpeed / 5) * 0.02f;
-
-            y = ClampAngle(y, yMinLimit, yMaxLimit);
-            Debug.Log("PostClamp Y is:" + y);
-
-            rotation = Quaternion.Euler(y, x, 0);*/
-
         }
         else if (Input.touchCount == 1)
         {
