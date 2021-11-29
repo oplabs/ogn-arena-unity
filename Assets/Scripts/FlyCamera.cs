@@ -19,7 +19,7 @@ public class FlyCamera : MonoBehaviour
     const float distanceMax = 5f;
     public Vector3 Offset;
     public bool AlwaysOn = false;
-    public float ZoomSensitivity = 1.0f;
+    public float ZoomSensitivity = 0.02f;
 
     public bool singleTouchOrbiting = true;
     public bool pinchToZoom = true;
@@ -79,7 +79,7 @@ public class FlyCamera : MonoBehaviour
         //DOS Modified tweaked this to be selectable
         if (IsMouseOverGameWindow && Input.touchCount == 0)
         {
-            float targetX = (Input.mousePosition.x / Screen.width - 0.5f) * 270f;
+            float targetX = (Input.mousePosition.x / Screen.width - 0.5f) * 290f;
             float targetY = (Input.mousePosition.y / Screen.height - 0.5f) * 70f; // don't go all the way up
    
 
@@ -149,8 +149,8 @@ public class FlyCamera : MonoBehaviour
                 float touchDeltaMag = (touchZero.position - touchOne.position).magnitude;
 
                 // Find the difference in the distances between each frame. Flip it so it goes the right way
-                float deltaMagnitudeDiff = ((prevTouchDeltaMag - touchDeltaMag) * -1) * ZoomSensitivity;
-                distance = Mathf.Clamp(distance - (deltaMagnitudeDiff / 10) * (scrollrate / 10), distanceMin, distanceMax);
+                float deltaMagnitudeDiff = (prevTouchDeltaMag - touchDeltaMag) * ZoomSensitivity;
+                distance = Mathf.Clamp(distance - (deltaMagnitudeDiff / 10.0f), distanceMin, distanceMax);
             }
         }
         else

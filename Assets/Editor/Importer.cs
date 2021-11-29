@@ -167,6 +167,16 @@ public class Importer
         foreach (var item in d.GetDirectories())
         {
             Debug.Log("Directory: " + item.FullName);
+            string [] keys = item.Name.Split('_');
+            string targetDir = Path.Combine(targetRootPath, item.Name + "_" + KeyName);
+
+            DirectoryInfo targetD = new DirectoryInfo(targetDir);
+
+            if (targetD.Exists) {
+              //we already imported this before
+              continue;
+            }
+            
             if (first)
             {
                 first = false;
@@ -175,10 +185,11 @@ public class Importer
             {
                 await Task.Delay(5000);
             }
-            string [] keys = item.Name.Split('_');
+
+
             ImportAsset(item.FullName, keys[1]);
-            string targetDir = Path.Combine(targetRootPath, item.Name + "_" + KeyName);
             BuildWebGLPlayer(targetDir);
+            FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/Face.jpg"), targetDir + "/Face.jpg");
             FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/Hero.jpg"), targetDir + "/Hero.jpg");
             FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/attrs.txt"), targetDir + "/attrs.txt");
         }
