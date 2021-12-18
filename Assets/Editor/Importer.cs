@@ -203,21 +203,41 @@ public class Importer
         Debug.Log("Deleting:" + AssetDatabase.DeleteAsset(assetPath));
 
         FileUtil.CopyFileOrDirectory(assetDirectory, Application.dataPath + relativePath);
-        Debug.Log("Copy done");
+        Debug.Log("Copy done for: " + assetDirectory);
 
         AssetDatabase.Refresh();
 
         AnimatorController rootController = AssetDatabase.LoadAssetAtPath<AnimatorController>("Assets/CC_Assets/hero_LODGroup_animator.controller");
-        AnimationClip idle = null, action = null;
+        AnimationClip idle = null, action = null, idle2 = null;
 
         AnimatorControllerLayer rootLayer = rootController.layers[0];
 
         AnimatorController controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(assetPath + "/hero_LODGroup_animator.controller");
 
-        bool isMage = (classType.ToLower() == "mage");
+        string charClass = classType.ToLower();
 
-        string idleClipName = isMage ? "F_LS_Warning_Idle" : "Idle_Battle";
-        string actionClipName = isMage ? "M_LS_MageSpellCast_05" : "Atk_2xCombo02";
+        string idleClipName = charClass switch { 
+              "mage" => "F_LS_Warning_Idle",
+              "cleric" => "F_LS_MageSpellCast_02",
+              "rogue" => "K03_Dagger_Atk_Stab_Jaw",
+              _ => "Idle_Battle"
+              };
+        string actionClipName = charClass switch {
+              "mage" => "M_LS_MageSpellCast_05",
+              "cleric" => "RunForward",
+              "rogue" => "Crouch_to_Sneak_Walk",
+              _ => "Atk_2xCombo02"
+          };
+
+        string idle2ClipName = charClass switch {
+            "mage" => "F_LS_Warning_Idle",
+            "cleric" => "Idle_Battle",
+            "rogue" => "Idle_Battle",
+            _ => "Idle_Battle"
+        };
+
+        Debug.Log("idleClip: " + idleClipName);
+        Debug.Log("actionClip: " + actionClipName);
 
         foreach (AnimationClip clip in controller.animationClips)
         {
@@ -225,20 +245,28 @@ public class Importer
           {
             idle = clip;
           }
-          else if (clip.name == actionClipName)
+          if (clip.name == actionClipName)
           {
             action = clip;
+          }
+          if (clip.name == idle2ClipName)
+          {
+            idle2 = clip;
           }
         }
 
         if (!idle || !action) {
-          if (isMage) {
+          if (charClass == "mage") {
             idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageIdle.anim");
             action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/MageAction.anim");
           } else {
             idle = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterIdle.anim");
             action = AssetDatabase.LoadAssetAtPath<AnimationClip>(animationPath + "/FighterAction.anim");
           }
+        }
+
+        if (idle2 == null) {
+          idle2 = idle;
         }
 
         foreach (var cs in rootLayer.stateMachine.states)
@@ -250,10 +278,10 @@ public class Importer
                 Debug.Log("setting idle");
                 rootController.SetStateEffectiveMotion(state, idle);
             }
-            else if (state.name == "idle2" && (idle != null))
+            else if (state.name == "idle2" && (idle2 != null))
             {
                 Debug.Log("setting idle");
-                rootController.SetStateEffectiveMotion(state, idle);
+                rootController.SetStateEffectiveMotion(state, idle2);
             }
             else if (state.name == "action" && (action != null))
             {
