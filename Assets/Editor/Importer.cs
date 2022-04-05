@@ -11,8 +11,12 @@ using System.Threading.Tasks;
 
 public class Importer
 {
+    private const string groupedBatchDirPref = "ImportGroupedBatchDirectory";
     private const string batchDirPref = "ImportBatchDirectory";
     private const string batchOutDirPref = "OutputBatchDirectory";
+
+    private static readonly string[] expectedFiles = {"Face.jpg", "Hero.jpg", "attrs.txt", "Hero_LODGroup.fbx", "Hero_LODGroup.json"};
+    private static readonly string[] expectedDirs = {"Hero.jpg", "attrs.txt"};
 
     [MenuItem("Tools/Texture Copy Alpha")]
     private static void TextureMenuItem()
@@ -79,6 +83,14 @@ public class Importer
 
     }
 
+    private static string getGroupedBatchReadDir() {
+      if (!EditorPrefs.HasKey(groupedBatchDirPref)){
+        throw new System.Exception("Please set a group directory to import from");
+      }
+      return EditorPrefs.GetString(groupedBatchDirPref);
+    }
+
+
     private static string getBatchReadDir() {
       if (!EditorPrefs.HasKey(batchDirPref)){
         throw new System.Exception("Please set a directory to import from");
@@ -93,6 +105,13 @@ public class Importer
       return EditorPrefs.GetString(batchOutDirPref);
     }
 
+    [MenuItem("Tools/Set Group Import Directory")]
+    private static void setGroupImporterDir()
+    {
+        string batchReadDir = EditorUtility.OpenFolderPanel("Set the folder you wish to group import from", "", "");
+        EditorPrefs.SetString(groupedBatchDirPref, batchReadDir);
+        Debug.Log("setting group batch directory to:" +  batchReadDir);
+    }
 
     [MenuItem("Tools/Set Import Directory")]
     private static void setImporterDir()
@@ -155,6 +174,25 @@ public class Importer
        AssetDatabase.SaveAssets();
     }
 
+
+    [MenuItem("Tools/Grouped Batch Import and Build")]
+    private async static void GroupImporterMenuItem()
+    {
+        string fromPath = getGroupedBatchReadDir();
+        string KeyName = Path.GetFileName(fromPath);
+        DirectoryInfo d = new DirectoryInfo(fromPath);
+        string targetRootPath = getBatchOutDir();
+        foreach (DirectoryInfo item in d.GetDirectories())
+        {
+          foreach (DirectoryInfo subItem in item.GetDirectories())
+          {
+            //use item as keyName
+            await doImport(item.Name, subItem, targetRootPath);
+          }
+        }
+    }
+
+
     // Import the boxer
     [MenuItem("Tools/Batch Import and Build")]
     private async static void ImporterMenuItem()
@@ -162,37 +200,51 @@ public class Importer
         string fromPath = getBatchReadDir();
         string KeyName = Path.GetFileName(fromPath);
         DirectoryInfo d = new DirectoryInfo(fromPath);
-        bool first = true;
         string targetRootPath = getBatchOutDir();
-        foreach (var item in d.GetDirectories())
+        foreach (DirectoryInfo item in d.GetDirectories())
         {
-            Debug.Log("Directory: " + item.FullName);
-            string [] keys = item.Name.Split('_');
-            string targetDir = Path.Combine(targetRootPath, item.Name + "_" + KeyName);
-
-            DirectoryInfo targetD = new DirectoryInfo(targetDir);
-
-            if (targetD.Exists) {
-              //we already imported this before
-              continue;
-            }
-            
-            if (first)
-            {
-                first = false;
-            }
-            else
-            {
-                await Task.Delay(5000);
-            }
-
-
-            ImportAsset(item.FullName, keys[1]);
-            BuildWebGLPlayer(targetDir);
-            FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/Face.jpg"), targetDir + "/Face.jpg");
-            FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/Hero.jpg"), targetDir + "/Hero.jpg");
-            FileUtil.CopyFileOrDirectory(Path.Combine(fromPath, item.Name + "/attrs.txt"), targetDir + "/attrs.txt");
+          await doImport(KeyName, item, targetRootPath);
         }
+    }
+
+
+    private async static Task<bool> doImport(string keyName, DirectoryInfo item, string targetRootPath) {
+        string [] keys = item.Name.Split('_');
+        string fullPath = item.FullName;
+        string targetDir = Path.Combine(targetRootPath, item.Name + "_" + keyName);
+
+        Debug.Log("Processing Directory: " + fullPath);
+
+        DirectoryInfo targetD = new DirectoryInfo(targetDir);
+
+        if (targetD.Exists) {
+          //we already imported this before
+          return false;
+        }
+
+        foreach(string f in expectedFiles) {
+          if (!File.Exists(Path.Combine(fullPath, f))) {
+            Debug.Log("Directory: " + fullPath + " missing " + f);
+            return false;
+          }
+        }
+
+        foreach(string d in expectedDirs) {
+          if (!File.Exists(Path.Combine(fullPath, d))) {
+            Debug.Log("Directory: " + fullPath + " missing " + d);
+            return false;
+          }
+        }
+
+        
+        await Task.Delay(5000);
+
+        ImportAsset(item.FullName, keys[1]);
+        BuildWebGLPlayer(targetDir);
+        FileUtil.CopyFileOrDirectory(Path.Combine(fullPath, "Face.jpg"), targetDir + "/Face.jpg");
+        FileUtil.CopyFileOrDirectory(Path.Combine(fullPath, "Hero.jpg"), targetDir + "/Hero.jpg");
+        FileUtil.CopyFileOrDirectory(Path.Combine(fullPath, "attrs.txt"), targetDir + "/attrs.txt");
+        return true;
     }
 
     private static void ImportAsset(string assetDirectory, string classType) {
